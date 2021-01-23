@@ -1,10 +1,10 @@
-use hello_world::greeter_client::GreeterClient;
-use hello_world::HelloRequest;
+use language::language_service_client::LanguageServiceClient;
+use language::LanguageRequest;
 use std::env;
 use tracing_subscriber::EnvFilter;
 
-pub mod hello_world {
-    tonic::include_proto!("helloworld");
+pub mod language {
+    tonic::include_proto!("language");
 }
 
 #[tokio::main]
@@ -19,15 +19,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = env::var("SERVER_ADDR")
         .unwrap_or_else(|_| "0.0.0.0:8080".to_string());
 
-    let mut client = GreeterClient::connect(addr).await?;
+    let mut client = LanguageServiceClient::connect(addr).await?;
 
-    let request = tonic::Request::new(HelloRequest {
-        name: args,
+    let request = tonic::Request::new(LanguageRequest {
+        text: args,
     });
 
     tracing::info!("Request: {:#?}", request);
 
-    let response = client.say_hello(request).await?;
+    let response = client.detect_language(request).await?;
 
     tracing::info!("Response: {:#?}", response);
 
