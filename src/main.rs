@@ -5,36 +5,36 @@ use std::env;
 use tonic::{transport::Server, Request, Response, Status};
 use tracing_subscriber::EnvFilter;
 
-use hello_world::greeter_server::{Greeter, GreeterServer};
-use hello_world::{HelloReply, HelloRequest};
+use language::language_service_server::{LanguageService, LanguageServiceServer};
+use language::{LanguageReply, LanguageRequest};
 
-pub mod hello_world {
-    tonic::include_proto!("helloworld");
+pub mod language {
+    tonic::include_proto!("language");
 }
 
-pub struct MyGreeter {
+pub struct Service {
     detector: LanguageDetector,
 }
 
-impl MyGreeter {
+impl Service {
     pub fn new(detector: LanguageDetector) -> Self {
         Self { detector }
     }
 }
 
 #[tonic::async_trait]
-impl Greeter for MyGreeter {
-    async fn say_hello(
+impl LanguageService for Service {
+    async fn detect_language(
         &self,
-        request: Request<HelloRequest>,
-    ) -> Result<Response<HelloReply>, Status> {
+        request: Request<LanguageRequest>,
+    ) -> Result<Response<LanguageReply>, Status> {
         tracing::info!("Got a request from {:?}", request.remote_addr());
 
         let detected_language: Option<Language> =
-            self.detector.detect_language_of(request.into_inner().name);
+            self.detector.detect_language_of(request.into_inner().text);
 
-        let reply = hello_world::HelloReply {
-            message: format!("{:?}", detected_language),
+        let reply = LanguageReply {
+            language: format!("{:?}", detected_language),
         };
         Ok(Response::new(reply))
     }
@@ -59,12 +59,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let detector: LanguageDetector = LanguageDetectorBuilder::from_languages(&languages).build();
     tracing::info!("Finished loading language detector");
 
-    let greeter = MyGreeter::new(detector);
+    let service = Service::new(detector);
 
     tracing::info!("GreeterServer listening on {}", addr);
 
     Server::builder()
-        .add_service(GreeterServer::new(greeter))
+        .add_service(LanguageServiceServer::new(service))
         .serve(addr)
         .await?;
 

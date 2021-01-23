@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package language;
+
+service LanguageService {
+  rpc DetectLanguage (LanguageRequest) returns (LanguageReply) {}
+}
+
+message LanguageRequest {
+  string text = 1;
+}
+
+// The response message containing the greetings
+message LanguageReply {
+  string language = 1;
+}
