@@ -3,6 +3,11 @@ name = "language-api"
 version = "0.1.0"
 authors = ["drklee3 <derrick@dlee.dev>"]
 edition = "2018"
+default-run = "language-api"
+
+[[bin]]
+name = "language-client"
+path = "src/client.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
