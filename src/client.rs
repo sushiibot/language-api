@@ -16,21 +16,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let args: String = env::args().skip(1).collect::<Vec<_>>().join(" ");
 
-    let addr = env::var("SERVER_ADDR")
-        .unwrap_or_else(|_| "0.0.0.0:8080".to_string());
+    let addr = env::var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_string());
 
     let mut client = LanguageServiceClient::connect(addr).await?;
 
-    let request = tonic::Request::new(LanguageRequest {
-        text: args,
-    });
+    let request = tonic::Request::new(LanguageRequest { text: args });
 
     tracing::info!("Request: {:#?}", request);
 
     let response = client.detect_language(request).await?;
 
     tracing::info!("Response: {:#?}", response);
-
 
     Ok(())
 }
