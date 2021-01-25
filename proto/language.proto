@@ -10,6 +10,7 @@ message LanguageRequest {
   string text = 1;
 }
 
+// The response message containing the greetings
 message LanguageReply {
   string language = 1;
 }
