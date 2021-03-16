@@ -6,7 +6,7 @@ use tonic::{transport::Server, Request, Response, Status};
 use tracing_subscriber::EnvFilter;
 
 use language::language_service_server::{LanguageService, LanguageServiceServer};
-use language::{LanguageReply, LanguageRequest};
+use language::{LanguageReply, LanguageConfidenceReply, LanguageConfidence, LanguageRequest};
 
 pub mod language {
     tonic::include_proto!("language");
@@ -36,6 +36,30 @@ impl LanguageService for Service {
         let reply = LanguageReply {
             language: format!("{:?}", detected_language),
         };
+        Ok(Response::new(reply))
+    }
+
+    async fn language_confidence(
+        &self,
+        request: Request<LanguageRequest>,
+    ) -> Result<Response<LanguageConfidenceReply>, Status> {
+        tracing::info!("Got a request from {:?}", request.remote_addr());
+
+        let languages: Vec<LanguageConfidence> = self.detector
+            .compute_language_confidence_values(request.into_inner().text)
+            .into_iter()
+            .map(|x| {
+                LanguageConfidence {
+                    language: format!("{:?}", x.0),
+                    confidence: x.1,
+                }
+            })
+            .collect();
+
+        let reply = LanguageConfidenceReply {
+            languages,
+        };
+
         Ok(Response::new(reply))
     }
 }

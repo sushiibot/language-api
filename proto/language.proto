@@ -4,6 +4,7 @@ package language;
 
 service LanguageService {
   rpc DetectLanguage (LanguageRequest) returns (LanguageReply) {}
+  rpc LanguageConfidence (LanguageRequest) returns (LanguageConfidenceReply) {}
 }
 
 message LanguageRequest {
@@ -13,4 +14,13 @@ message LanguageRequest {
 // The response message containing the greetings
 message LanguageReply {
   string language = 1;
+}
+
+message LanguageConfidence {
+  string language = 1;
+  double confidence = 2;
+}
+
+message LanguageConfidenceReply {
+  repeated LanguageConfidence languages = 1;
 }
