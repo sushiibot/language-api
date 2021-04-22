@@ -666,6 +666,7 @@ dependencies = [
 name = "language-api"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "config",
  "dotenv",
  "lingua",
