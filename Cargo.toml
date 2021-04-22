@@ -5,20 +5,16 @@ authors = ["drklee3 <derrick@dlee.dev>"]
 edition = "2018"
 default-run = "language-api"
 
-[[bin]]
-name = "language-client"
-path = "src/client.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# [[bin]]
+# name = "language-client"
+# path = "src/client.rs"
 
 [dependencies]
+config = "0.11.0"
+dotenv = "0.15.0"
 lingua = "1.1.0"
-tonic = "0.4.0"
-prost = "0.7.0"
+serde = "1.0.125"
+tokio = { version = "1.1.0", features = ["rt-multi-thread", "macros"]}
 tracing = "0.1.22"
 tracing-subscriber = "0.2.15"
-tokio = { version = "1.1.0", features = ["rt-multi-thread", "macros"]}
-dotenv = "0.15.0"
-
-[build-dependencies]
-tonic-build = "0.4"
+warp = "0.3.1"

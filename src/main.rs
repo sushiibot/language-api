@@ -1,67 +1,38 @@
 use lingua::Language::{English, French, German, Spanish, Turkish};
-use lingua::{Language, LanguageDetector, LanguageDetectorBuilder};
+use lingua::{Language, LanguageDetectorBuilder};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::net::SocketAddr;
-use std::env;
-use tonic::{transport::Server, Request, Response, Status};
 use tracing_subscriber::EnvFilter;
 
-use language::language_service_server::{LanguageService, LanguageServiceServer};
-use language::{LanguageReply, LanguageConfidenceReply, LanguageConfidence, LanguageRequest};
+use warp::Filter;
 
-pub mod language {
-    tonic::include_proto!("language");
+#[derive(Deserialize)]
+pub struct Config {
+    pub listen_addr: SocketAddr,
 }
 
-pub struct Service {
-    detector: LanguageDetector,
-}
-
-impl Service {
-    pub fn new(detector: LanguageDetector) -> Self {
-        Self { detector }
+impl Config {
+    pub fn from_env() -> Result<Self, config::ConfigError> {
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new())?;
+        Ok(cfg.try_into()?)
     }
 }
 
-#[tonic::async_trait]
-impl LanguageService for Service {
-    async fn detect_language(
-        &self,
-        request: Request<LanguageRequest>,
-    ) -> Result<Response<LanguageReply>, Status> {
-        tracing::info!("Got a request from {:?}", request.remote_addr());
+#[derive(Deserialize, Serialize)]
+struct DetectQuery {
+    pub text: String,
+}
 
-        let detected_language: Option<Language> =
-            self.detector.detect_language_of(request.into_inner().text);
+#[derive(Deserialize, Serialize)]
+struct DetectResponse {
+    pub language: Option<Language>,
+}
 
-        let reply = LanguageReply {
-            language: format!("{:?}", detected_language),
-        };
-        Ok(Response::new(reply))
-    }
-
-    async fn language_confidence(
-        &self,
-        request: Request<LanguageRequest>,
-    ) -> Result<Response<LanguageConfidenceReply>, Status> {
-        tracing::info!("Got a request from {:?}", request.remote_addr());
-
-        let languages: Vec<LanguageConfidence> = self.detector
-            .compute_language_confidence_values(request.into_inner().text)
-            .into_iter()
-            .map(|x| {
-                LanguageConfidence {
-                    language: format!("{:?}", x.0),
-                    confidence: x.1,
-                }
-            })
-            .collect();
-
-        let reply = LanguageConfidenceReply {
-            languages,
-        };
-
-        Ok(Response::new(reply))
-    }
+#[derive(Deserialize, Serialize)]
+struct ConfidenceResponse {
+    pub confidences: Vec<(Language, f64)>,
 }
 
 #[tokio::main]
@@ -72,25 +43,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    let addr: SocketAddr = env::var("LISTEN_ADDR")
-        .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
-        .parse::<SocketAddr>()
-        .expect("Failed to parse LISTEN_ADDR as a SocketAddr");
+    let cfg = Config::from_env().expect("Failed to create config");
 
     let languages = vec![English, French, German, Spanish, Turkish];
 
     tracing::info!("Loading languages: {:?}", languages);
-    let detector: LanguageDetector = LanguageDetectorBuilder::from_languages(&languages).build();
+    let detector = Arc::new(LanguageDetectorBuilder::from_languages(&languages).build());
     tracing::info!("Finished loading language detector");
 
-    let service = Service::new(detector);
+    let log = warp::log("language_api");
 
-    tracing::info!("GreeterServer listening on {}", addr);
+    let detector_clone = detector.clone();
+    let detect_language = warp::post()
+        .and(warp::path("detect"))
+        // Only accept bodies smaller than 16kb...
+        .and(warp::body::content_length_limit(1024 * 16))
+        .and(warp::body::json())
+        .map(move |body: DetectQuery| {
+            let language = detector_clone.detect_language_of(body.text);
 
-    Server::builder()
-        .add_service(LanguageServiceServer::new(service))
-        .serve(addr)
-        .await?;
+            warp::reply::json(&DetectResponse { language })
+        })
+        .with(log);
+
+    let confidence_language = warp::post()
+        .and(warp::path("confidence"))
+        // Only accept bodies smaller than 16kb...
+        .and(warp::body::content_length_limit(1024 * 16))
+        .and(warp::body::json())
+        .map(move |body: DetectQuery| {
+            let confidences = detector.compute_language_confidence_values(body.text);
+
+            warp::reply::json(&ConfidenceResponse { confidences })
+        })
+        .with(log);
+
+    tracing::info!("Listening on {}", cfg.listen_addr);
+
+    let routes = detect_language.or(confidence_language);
+
+    warp::serve(routes).run(cfg.listen_addr).await;
 
     Ok(())
 }
