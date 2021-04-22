@@ -20,7 +20,7 @@ impl LanguageApiClient {
         }
     }
 
-    async fn detect_language(&self, text: &str) -> Result<Option<Language>, Error> {
+    pub async fn detect_language(&self, text: &str) -> Result<Option<Language>, Error> {
         self.client.post(format!("{}/detect", self.endpoint))
             .json(&DetectQuery {
                 text: text.to_string(),
@@ -33,7 +33,7 @@ impl LanguageApiClient {
             .map_err(From::from)
     }
 
-    async fn detect_language_confidences(&self, text: &str) -> Result<Vec<(Language, f64)>, Error> {
+    pub async fn detect_language_confidences(&self, text: &str) -> Result<Vec<(Language, f64)>, Error> {
         self.client.post(format!("{}/confidence", self.endpoint))
             .json(&DetectQuery {
                 text: text.to_string(),
