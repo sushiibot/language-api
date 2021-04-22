@@ -1,11 +1,14 @@
 use lingua::Language::{English, French, German, Spanish, Turkish};
-use lingua::{Language, LanguageDetectorBuilder};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use lingua::{LanguageDetectorBuilder};
+use serde::Deserialize;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
 use warp::Filter;
+
+mod model;
+use model::{ConfidenceResponse, DetectQuery, DetectResponse};
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -18,21 +21,6 @@ impl Config {
         cfg.merge(config::Environment::new())?;
         Ok(cfg.try_into()?)
     }
-}
-
-#[derive(Deserialize, Serialize)]
-struct DetectQuery {
-    pub text: String,
-}
-
-#[derive(Deserialize, Serialize)]
-struct DetectResponse {
-    pub language: Option<Language>,
-}
-
-#[derive(Deserialize, Serialize)]
-struct ConfidenceResponse {
-    pub confidences: Vec<(Language, f64)>,
 }
 
 #[tokio::main]
@@ -62,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(move |body: DetectQuery| {
             let language = detector_clone.detect_language_of(body.text);
 
-            warp::reply::json(&DetectResponse { language })
+            warp::reply::json(&DetectResponse(language))
         })
         .with(log);
 
@@ -74,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(move |body: DetectQuery| {
             let confidences = detector.compute_language_confidence_values(body.text);
 
-            warp::reply::json(&ConfidenceResponse { confidences })
+            warp::reply::json(&ConfidenceResponse(confidences))
         })
         .with(log);
 
