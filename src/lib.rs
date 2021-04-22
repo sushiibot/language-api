@@ -6,6 +6,7 @@ mod model;
 use error::Error;
 use model::{DetectQuery, DetectResponse, ConfidenceResponse};
 
+#[derive(Clone, Debug)]
 pub struct LanguageApiClient {
     client: Client,
     endpoint: String,
