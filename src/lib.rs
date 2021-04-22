@@ -15,7 +15,7 @@ impl LanguageApiClient {
     pub fn new(client: Client, endpoint: &str) -> Self {
         Self {
             client,
-            endpoint: endpoint.to_string(),
+            endpoint: endpoint.trim_end_matches("/").to_string(),
         }
     }
 
