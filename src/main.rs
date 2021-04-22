@@ -1,14 +1,11 @@
 use lingua::Language::{English, French, German, Spanish, Turkish};
-use lingua::{LanguageDetectorBuilder};
+use lingua::LanguageDetectorBuilder;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 
 use warp::Filter;
-
-mod model;
-use model::{ConfidenceResponse, DetectQuery, DetectResponse};
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -22,6 +19,10 @@ impl Config {
         Ok(cfg.try_into()?)
     }
 }
+
+#[derive(Debug)]
+struct NotUtf8;
+impl warp::reject::Reject for NotUtf8 {}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,16 +42,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let log = warp::log("language_api");
 
+    let string_body = warp::body::bytes().and_then(|body: bytes::Bytes| async move {
+        std::str::from_utf8(&body)
+            .map(String::from)
+            .map_err(|_e| warp::reject::custom(NotUtf8))
+    });
+
     let detector_clone = detector.clone();
     let detect_language = warp::post()
         .and(warp::path("detect"))
         // Only accept bodies smaller than 16kb...
         .and(warp::body::content_length_limit(1024 * 16))
-        .and(warp::body::json())
-        .map(move |body: DetectQuery| {
-            let language = detector_clone.detect_language_of(body.text);
+        .and(string_body)
+        .map(move |text: String| {
+            let language = detector_clone.detect_language_of(text);
 
-            warp::reply::json(&DetectResponse(language))
+            warp::reply::json(&language)
         })
         .with(log);
 
@@ -58,11 +65,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and(warp::path("confidence"))
         // Only accept bodies smaller than 16kb...
         .and(warp::body::content_length_limit(1024 * 16))
-        .and(warp::body::json())
-        .map(move |body: DetectQuery| {
-            let confidences = detector.compute_language_confidence_values(body.text);
+        .and(string_body)
+        .map(move |text: String| {
+            let confidences = detector.compute_language_confidence_values(text);
 
-            warp::reply::json(&ConfidenceResponse(confidences))
+            warp::reply::json(&confidences)
         })
         .with(log);
 

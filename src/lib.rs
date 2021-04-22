@@ -1,11 +1,9 @@
-use reqwest::Client;
 use lingua::Language;
+use reqwest::Client;
 
 pub mod error;
-pub mod model;
 
 use error::Error;
-use model::{DetectQuery, DetectResponse, ConfidenceResponse};
 
 #[derive(Clone, Debug)]
 pub struct LanguageApiClient {
@@ -22,28 +20,27 @@ impl LanguageApiClient {
     }
 
     pub async fn detect_language(&self, text: &str) -> Result<Option<Language>, Error> {
-        self.client.post(format!("{}/detect", self.endpoint))
-            .json(&DetectQuery {
-                text: text.to_string(),
-            })
+        self.client
+            .post(format!("{}/detect", self.endpoint))
+            .body(text.to_string())
             .send()
             .await?
-            .json::<DetectResponse>()
+            .json::<Option<Language>>()
             .await
-            .map(|l| l.0)
             .map_err(From::from)
     }
 
-    pub async fn detect_language_confidences(&self, text: &str) -> Result<Vec<(Language, f64)>, Error> {
-        self.client.post(format!("{}/confidence", self.endpoint))
-            .json(&DetectQuery {
-                text: text.to_string(),
-            })
+    pub async fn detect_language_confidences(
+        &self,
+        text: &str,
+    ) -> Result<Vec<(Language, f64)>, Error> {
+        self.client
+            .post(format!("{}/confidence", self.endpoint))
+            .body(text.to_string())
             .send()
             .await?
-            .json::<ConfidenceResponse>()
+            .json::<Vec<(Language, f64)>>()
             .await
-            .map(|l| l.0)
             .map_err(From::from)
     }
 }
@@ -58,7 +55,8 @@ mod tests {
         let client = Client::new();
         let language_client = LanguageApiClient::new(client, "http://localhost:8080");
 
-        let detected_language = language_client.detect_language("bisous et l'étreinte")
+        let detected_language = language_client
+            .detect_language("bisous et l'étreinte")
             .await
             .expect("Detect language");
 
@@ -70,7 +68,8 @@ mod tests {
         let client = Client::new();
         let language_client = LanguageApiClient::new(client, "http://localhost:8080");
 
-        let detected_language = language_client.detect_language_confidences("bisous et l'étreinte")
+        let detected_language = language_client
+            .detect_language_confidences("bisous et l'étreinte")
             .await
             .expect("Detect language confidence");
 
