@@ -1,8 +1,9 @@
 use reqwest::Client;
 use lingua::Language;
 
-mod error;
-mod model;
+pub mod error;
+pub mod model;
+
 use error::Error;
 use model::{DetectQuery, DetectResponse, ConfidenceResponse};
 
