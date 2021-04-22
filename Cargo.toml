@@ -3,18 +3,32 @@ name = "language-api"
 version = "0.1.0"
 authors = ["drklee3 <derrick@dlee.dev>"]
 edition = "2018"
-default-run = "language-api"
 
-# [[bin]]
-# name = "language-client"
-# path = "src/client.rs"
+[lib]
+name = "language_api_wrapper"
+path = "src/lib.rs"
+
+[[bin]]
+name = "language-api"
+path = "src/main.rs"
+required-features = ["build-binary"]
 
 [dependencies]
-config = "0.11.0"
-dotenv = "0.15.0"
-lingua = "1.1.0"
+# dependencies for all
 serde = "1.0.125"
-tokio = { version = "1.1.0", features = ["rt-multi-thread", "macros"]}
+tokio = { version = "1.1.0", features = ["rt-multi-thread", "macros"] }
 tracing = "0.1.22"
-tracing-subscriber = "0.2.15"
-warp = "0.3.1"
+lingua = "1.1.0"
+thiserror = "1.0.24"
+
+# lib dependencies
+reqwest = { version = "0.11.3", features = ["json"] }
+
+# bin dependencies
+config = {version = "0.11.0", optional = true }
+dotenv = {version = "0.15.0", optional = true }
+tracing-subscriber = {version = "0.2.15", optional = true }
+warp = {version = "0.3.1", optional = true }
+
+[features]
+build-binary = ["warp", "tracing-subscriber", "dotenv", "config"]
