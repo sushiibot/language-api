@@ -3,7 +3,7 @@ use lingua::LanguageDetectorBuilder;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 
 use warp::Filter;
 
@@ -15,6 +15,8 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, config::ConfigError> {
         let mut cfg = config::Config::new();
+
+        cfg.set_default("listen_addr", "0.0.0.0:8080")?;
         cfg.merge(config::Environment::new())?;
         Ok(cfg.try_into()?)
     }
@@ -29,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
 
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
+        .with_env_filter(EnvFilter::from_default_env().add_directive(LevelFilter::INFO.into()))
         .init();
 
     let cfg = Config::from_env().expect("Failed to create config");
@@ -37,7 +39,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let languages = vec![English, French, German, Spanish, Turkish];
 
     tracing::info!("Loading languages: {:?}", languages);
-    let detector = Arc::new(LanguageDetectorBuilder::from_languages(&languages).build());
+    let detector = Arc::new(
+        LanguageDetectorBuilder::from_languages(&languages)
+            .with_minimum_relative_distance(0.25)
+            .build(),
+    );
     tracing::info!("Finished loading language detector");
 
     let log = warp::log("language_api");
