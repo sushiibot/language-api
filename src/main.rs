@@ -4,12 +4,14 @@ use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
+use lingua::Language;
 
 use warp::Filter;
 
 #[derive(Deserialize)]
 pub struct Config {
     pub listen_addr: SocketAddr,
+    pub languages: Vec<Language>,
 }
 
 impl Config {
@@ -42,6 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let detector = Arc::new(
         LanguageDetectorBuilder::from_languages(&languages)
             .with_minimum_relative_distance(0.25)
+            .with_preloaded_language_models()
             .build(),
     );
     tracing::info!("Finished loading language detector");
