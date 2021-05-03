@@ -672,6 +672,7 @@ dependencies = [
  "lingua",
  "reqwest",
  "serde 1.0.125",
+ "serde_json",
  "thiserror",
  "tokio",
  "tracing",

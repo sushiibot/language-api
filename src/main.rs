@@ -1,17 +1,16 @@
-use lingua::Language::{English, French, German, Spanish, Turkish};
+use lingua::Language;
 use lingua::LanguageDetectorBuilder;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
-use lingua::Language;
 
 use warp::Filter;
 
 #[derive(Deserialize)]
 pub struct Config {
     pub listen_addr: SocketAddr,
-    pub languages: Vec<Language>,
+    pub languages: String,
 }
 
 impl Config {
@@ -21,6 +20,19 @@ impl Config {
         cfg.set_default("listen_addr", "0.0.0.0:8080")?;
         cfg.merge(config::Environment::new())?;
         Ok(cfg.try_into()?)
+    }
+
+    pub fn parse_languages(&self) -> Result<Vec<Language>, serde_json::Error> {
+        // Somewhat hacky way to parse
+        let s = self
+            .languages
+            .to_uppercase()
+            .split(",")
+            .map(|s| format!("\"{}\"", s.trim()))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        serde_json::from_str(&format!("[{}]", s))
     }
 }
 
@@ -38,7 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cfg = Config::from_env().expect("Failed to create config");
 
-    let languages = vec![English, French, German, Spanish, Turkish];
+    // let languages = vec![English, French, German, Spanish, Turkish];
+    let languages = cfg.parse_languages()?;
 
     tracing::info!("Loading languages: {:?}", languages);
     let detector = Arc::new(
