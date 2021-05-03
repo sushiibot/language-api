@@ -11,6 +11,7 @@ use warp::Filter;
 pub struct Config {
     pub listen_addr: SocketAddr,
     pub languages: String,
+    pub minimum_relative_distance: Option<f64>,
 }
 
 impl Config {
@@ -54,12 +55,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let languages = cfg.parse_languages()?;
 
     tracing::info!("Loading languages: {:?}", languages);
+    tracing::info!("Using minimum relative distance of {}", cfg.minimum_relative_distance.unwrap_or(0.0));
+
     let detector = Arc::new(
         LanguageDetectorBuilder::from_languages(&languages)
-            .with_minimum_relative_distance(0.25)
+            .with_minimum_relative_distance(cfg.minimum_relative_distance.unwrap_or(0.0))
             .with_preloaded_language_models()
             .build(),
     );
+
     tracing::info!("Finished loading language detector");
 
     let log = warp::log("language_api");
