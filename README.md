@@ -39,3 +39,13 @@ LANGUAGES="english, japanese, chinese, french, turkish"
 # Or without quotes, must have no spaces
 LANGUAGES=english,japanese,chinese,french,turkish
 ```
+
+## Examples
+
+```bash
+$ curl -X POST -d "bisous et l'étreinte" http://0.0.0.0:8080/confidence
+[["FRENCH",1.0],["SPANISH",0.7892397691434101],["ENGLISH",0.7444484822969599],["TURKISH",0.6363320008471676]]
+
+$ curl -X POST -d "안녕하세요" http://0.0.0.0:8080/detect
+"KOREAN"
+```
