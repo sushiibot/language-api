@@ -50,6 +50,7 @@ mod tests {
     use super::*;
     use lingua::Language;
 
+    #[ignore]
     #[tokio::test]
     async fn detects_language() {
         let client = Client::new();
@@ -63,6 +64,7 @@ mod tests {
         assert_eq!(detected_language, Some(Language::French));
     }
 
+    #[ignore]
     #[tokio::test]
     async fn detects_language_confidences() {
         let client = Client::new();
