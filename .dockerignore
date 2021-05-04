@@ -1,0 +1,12 @@
+**/Dockerfile
+**/docker-compose.yml
+
+**/target
+
+**/.git
+**/.github
+**/.gitignore
+**/*.env*
+**/*.md
+
+**/sqlx-data.*.json
