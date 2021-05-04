@@ -38,6 +38,9 @@ LISTEN_ADDR=0.0.0.0:8080
 LANGUAGES="english, japanese, chinese, french, turkish"
 # Or without quotes, must have no spaces
 LANGUAGES=english,japanese,chinese,french,turkish
+
+# Optional, must be between 0.0 and 0.99
+MINIMUM_RELATIVE_DISTANCE=0.2
 ```
 
 ## Examples
